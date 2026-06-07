@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#D4536F">
+<title>ミニモサロン帳</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<link rel="icon" href="icon-192.svg" type="image/svg+xml">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#FAF7F8;--card:#fff;--ink:#2D2A2B;--ink-soft:#6B6568;--ink-light:#A39DA0;
+  --accent:#D4536F;--accent-soft:#FCE8ED;--accent-pale:#FFF5F7;
+  --line:#EDE8EA;--ok:#2E9E6A;--nav-h:72px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --radius:18px;
+  --font:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--ink);overflow:hidden}
+body{display:flex;flex-direction:column}
+
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;padding-top:var(--safe-top);position:relative;z-index:1}
+.screen.active{display:flex}
+.scroll-body{flex:1;overflow-y:auto;padding:0 16px calc(var(--nav-h) + var(--safe-bottom) + 16px);-webkit-overflow-scrolling:touch}
+
+.page-head{padding:18px 16px 8px}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.page-sub{font-size:12px;color:var(--ink-soft);margin-top:4px;line-height:1.5}
+
+.stat-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent-pale);color:var(--accent);
+  padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+  margin-top:10px;
+}
+
+.filter-block{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px;margin-bottom:12px;
+}
+.filter-label{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);
+  background:var(--card);font-size:13px;font-weight:600;color:var(--ink-soft);
+  cursor:pointer;-webkit-user-select:none;user-select:none;
+}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.salon-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:10px;
+}
+.salon-name{font-size:15px;font-weight:800;margin-bottom:4px;line-height:1.35}
+.salon-meta{font-size:12px;color:var(--ink-soft);line-height:1.6}
+.salon-meta span{display:inline-block;margin-right:8px}
+.salon-badge{
+  display:inline-block;background:var(--accent-soft);color:var(--accent);
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:6px;
+}
+.empty-box{
+  text-align:center;padding:40px 20px;color:var(--ink-light);font-size:14px;line-height:1.7;
+}
+
+.action-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;
+}
+.action-card h3{font-size:14px;font-weight:800;margin-bottom:6px}
+.action-card p{font-size:12px;color:var(--ink-soft);line-height:1.6;margin-bottom:12px}
+
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:14px 16px;border-radius:14px;border:none;
+  font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+}
+.btn:active{transform:scale(.98);opacity:.92}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:var(--accent-pale);color:var(--accent)}
+.btn-ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn-danger{background:#FFF0F0;color:#C43D3D;border:1.5px solid #F5D0D0}
+.btn + .btn{margin-top:8px}
+
+.note-box{
+  background:var(--accent-pale);border-radius:12px;padding:12px 14px;
+  font-size:12px;color:var(--ink-soft);line-height:1.65;margin-bottom:12px;
+}
+
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  display:flex;background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:var(--safe-bottom);height:calc(var(--nav-h) + var(--safe-bottom));
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  border:none;background:none;font-family:inherit;font-size:10px;font-weight:700;
+  color:var(--ink-light);cursor:pointer;padding-top:8px;
+}
+.nav-btn svg{width:22px;height:22px}
+.nav-btn.active{color:var(--accent)}
+
+.sheet-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;
+}
+.sheet-backdrop.open{display:block}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:31;
+  background:var(--card);border-radius:20px 20px 0 0;
+  padding:12px 16px calc(20px + var(--safe-bottom));
+  transform:translateY(110%);transition:transform .28s ease;
+  max-height:85vh;overflow-y:auto;
+}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 14px}
+.sheet-title{font-size:17px;font-weight:800;margin-bottom:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+.field input,.field select{
+  width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;
+  font-family:inherit;font-size:15px;background:#fff;
+}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  transform:translateX(-50%) translateY(120px);opacity:0;
+  background:rgba(45,42,43,.92);color:#fff;padding:10px 18px;border-radius:999px;
+  font-size:13px;font-weight:600;z-index:40;transition:transform .25s,opacity .25s;pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<!-- リスト -->
+<div class="screen active" id="screen-list">
+  <div class="page-head">
+    <div class="page-title">サロンリスト</div>
+    <div class="page-sub">端末に保存。閉じてもデータは残ります</div>
+    <div class="stat-pill" id="listStat">0件</div>
+  </div>
+  <div class="scroll-body" id="listBody"></div>
+</div>
+
+<!-- 取込 -->
+<div class="screen" id="screen-import">
+  <div class="page-head">
+    <div class="page-title">データ取込</div>
+    <div class="page-sub">旧アプリのCSVやスプシから追加</div>
+  </div>
+  <div class="scroll-body" id="importBody"></div>
+</div>
+
+<!-- 出力 -->
+<div class="screen" id="screen-export">
+  <div class="page-head">
+    <div class="page-title">出力</div>
+    <div class="page-sub">スプレッドシートへコピー・保存</div>
+  </div>
+  <div class="scroll-body" id="exportBody"></div>
+</div>
+
+<nav class="bottom-nav">
+  <button type="button" class="nav-btn active" data-screen="list" onclick="switchScreen('list')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>リスト</span>
+  </button>
+  <button type="button" class="nav-btn" data-screen="import" onclick="switchScreen('import')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>
+    <span>取込</span>
+  </button>
+  <button type="button" class="nav-btn" data-screen="export" onclick="switchScreen('export')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg>
+    <span>出力</span>
+  </button>
+</nav>
+
+<!-- ボトムシート: 手動追加 -->
+<div class="sheet-backdrop" id="backdrop-add" onclick="closeSheet('add')"></div>
+<div class="sheet" id="sheet-add">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">サロンを手動追加</div>
+  <div class="field"><label>サロン名</label><input id="addName" type="text" placeholder="サロン名"></div>
+  <div class="field"><label>ジャンル</label>
+    <select id="addGenre">
+      <option value="ネイル">ネイル</option>
+      <option value="マツエク・マツパ">マツエク・マツパ</option>
+      <option value="眉毛">眉毛</option>
+      <option value="エステ・リラク">エステ・リラク</option>
+      <option value="その他美容">その他美容</option>
+    </select>
+  </div>
+  <div class="field"><label>住所</label><input id="addAddress" type="text" placeholder="住所"></div>
+  <div class="field"><label>電話番号</label><input id="addPhone" type="tel" inputmode="tel" placeholder="09012345678"></div>
+  <div class="field"><label>サロンURL</label><input id="addUrl" type="url" placeholder="https://minimodel.jp/r/..."></div>
+  <div class="field"><label>お気に入り数</label><input id="addLikes" type="number" inputmode="numeric" value="0" min="0"></div>
+  <div class="field"><label>最終更新日</label><input id="addUpdated" type="date"></div>
+  <button type="button" class="btn btn-primary" onclick="submitAddSalon()">追加する</button>
+</div>
+
+<!-- ボトムシート: 削除確認 -->
+<div class="sheet-backdrop" id="backdrop-clear" onclick="closeSheet('clear')"></div>
+<div class="sheet" id="sheet-clear">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">すべてのデータを削除しますか？</div>
+  <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px">
+    端末に保存したサロンデータがすべて消えます。元に戻せません。
+  </p>
+  <button type="button" class="btn btn-danger" onclick="confirmClearAll()">削除する</button>
+  <button type="button" class="btn btn-ghost" onclick="closeSheet('clear')">キャンセル</button>
+</div>
+
+<input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleCsvFile(event)">
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'minimo_salon_app_v1';
+const OLD_STORAGE_KEY = 'minimo_salons';
+
+const GENRES = ['ネイル', 'マツエク・マツパ', '眉毛', 'エステ・リラク', 'その他美容'];
+const LIKES_PRESETS = [5, 10, 20, 50, 100];
+const UPDATE_PRESETS = [
+  { id: 'off', label: '指定なし' },
+  { id: '7', label: '7日以内' },
+  { id: '14', label: '14日以内' },
+  { id: '30', label: '30日以内' },
+  { id: '90', label: '90日以内' }
+];
+
+const state = {
+  salons: [],
+  sessionNewUrls: [],
+  filters: {
+    genres: [],
+    maxLikes: 100,
+    updatePreset: 'off'
+  }
+};
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function normalizePhone(phone) {
+  let s = String(phone || '').trim();
+  if (s.startsWith("'")) s = s.slice(1);
+  if (s.endsWith('.0')) s = s.slice(0, -2);
+  const digits = s.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 9) return '0' + digits;
+  if (digits.length === 10 && !digits.startsWith('0')) return '0' + digits;
+  return digits;
+}
+
+function formatPhoneForSheet(phone) {
+  const d = normalizePhone(phone);
+  return d ? "'" + d : '';
+}
+
+function normalizeSalon(raw) {
+  const url = String(raw.url || raw['サロンURL'] || '').trim();
+  if (!url) return null;
+  const likesRaw = raw.likes ?? raw['いいね数'] ?? 0;
+  const likes = parseInt(String(likesRaw).replace(/,/g, ''), 10) || 0;
+  const updated = String(raw.updatedAt || raw['最終更新日'] || '').trim().slice(0, 10);
+  const fetched = String(raw.fetchedAt || raw['取得日時'] || '').trim() || todayStr();
+  return {
+    id: raw.id || uid(),
+    name: String(raw.name || raw['サロン名'] || '').trim(),
+    genre: String(raw.genre || raw['ジャンル'] || 'その他美容').trim(),
+    address: String(raw.address || raw['住所'] || '').trim(),
+    phone: normalizePhone(raw.phone || raw['電話番号'] || ''),
+    url: url,
+    likes: likes,
+    updatedAt: updated,
+    fetchedAt: fetched.slice(0, 10)
+  };
+}
+
+function migrate() {
+  let changed = false;
+  if (!state.salons.length) {
+    try {
+      const old = localStorage.getItem(OLD_STORAGE_KEY);
+      if (old) {
+        const data = JSON.parse(old);
+        const arr = Array.isArray(data) ? data : (data.salons || []);
+        arr.forEach(item => {
+          const s = normalizeSalon(item);
+          if (s) state.salons.push(s);
+        });
+        changed = true;
+      }
+    } catch (e) {}
+  }
+  state.salons = dedupeByUrl(state.salons);
+  state.salons.forEach(s => {
+    if (!s.id) { s.id = uid(); changed = true; }
+    if (!s.fetchedAt) { s.fetchedAt = todayStr(); changed = true; }
+  });
+  if (changed) save();
+}
+
+function load() {
+  try {
+    const d = localStorage.getItem(STORAGE_KEY);
+    if (d) {
+      const data = JSON.parse(d);
+      if (Array.isArray(data.salons)) state.salons = data.salons;
+      if (data.filters) state.filters = Object.assign(state.filters, data.filters);
+    }
+  } catch (e) {}
+  migrate();
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      salons: state.salons,
+      filters: state.filters
+    }));
+  } catch (e) {
+    showToast('保存に失敗しました');
+  }
+}
+
+function dedupeByUrl(list) {
+  const map = new Map();
+  list.forEach(s => {
+    if (!s || !s.url) return;
+    const prev = map.get(s.url);
+    if (!prev || (s.fetchedAt || '') > (prev.fetchedAt || '')) map.set(s.url, s);
+  });
+  return Array.from(map.values());
+}
+
+function addSalons(rows) {
+  const existing = new Set(state.salons.map(s => s.url));
+  let added = 0;
+  rows.forEach(raw => {
+    const s = normalizeSalon(raw);
+    if (!s || existing.has(s.url)) return;
+    existing.add(s.url);
+    state.salons.push(s);
+    state.sessionNewUrls.push(s.url);
+    added++;
+  });
+  if (added) {
+    state.salons = dedupeByUrl(state.salons);
+    save();
+  }
+  return added;
+}
+
+function parseCsvText(text) {
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) return [];
+  const delim = lines[0].includes('\t') ? '\t' : ',';
+  const headers = splitCsvLine(lines[0], delim).map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitCsvLine(lines[i], delim);
+    if (!cols.length) continue;
+    const row = {};
+    headers.forEach((h, idx) => { row[h] = cols[idx] || ''; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitCsvLine(line, delim) {
+  const out = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === delim && !inQ) {
+      out.push(cur); cur = '';
+    } else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+function getUpdateRange() {
+  const preset = state.filters.updatePreset;
+  if (preset === 'off') return null;
+  const days = parseInt(preset, 10);
+  const max = todayStr();
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() - days);
+  const min = minDate.getFullYear() + '-' +
+    String(minDate.getMonth() + 1).padStart(2, '0') + '-' +
+    String(minDate.getDate()).padStart(2, '0');
+  return { min, max };
+}
+
+function filterSalons(source) {
+  let list = source.slice();
+  if (state.filters.genres.length) {
+    list = list.filter(s => state.filters.genres.includes(s.genre));
+  }
+  list = list.filter(s => s.likes <= state.filters.maxLikes);
+  const range = getUpdateRange();
+  if (range) {
+    list = list.filter(s => s.updatedAt && s.updatedAt >= range.min && s.updatedAt <= range.max);
+  }
+  return list.sort((a, b) => {
+    if ((b.updatedAt || '') !== (a.updatedAt || '')) return (b.updatedAt || '').localeCompare(a.updatedAt || '');
+    return a.likes - b.likes;
+  });
+}
+
+function salonsToTsv(list) {
+  const headers = ['サロン名', 'ジャンル', '住所', '電話番号', 'サロンURL', 'いいね数', '最終更新日', '取得日時'];
+  const lines = [headers.join('\t')];
+  list.forEach(s => {
+    lines.push([
+      s.name, s.genre, s.address, formatPhoneForSheet(s.phone),
+      s.url, s.likes, s.updatedAt, s.fetchedAt
+    ].join('\t'));
+  });
+  return lines.join('\n');
+}
+
+function salonsToCsv(list) {
+  const headers = ['サロン名', 'ジャンル', '住所', '電話番号', 'サロンURL', 'いいね数', '最終更新日', '取得日時'];
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lines = [headers.map(esc).join(',')];
+  list.forEach(s => {
+    lines.push([
+      s.name, s.genre, s.address, formatPhoneForSheet(s.phone),
+      s.url, s.likes, s.updatedAt, s.fetchedAt
+    ].map(esc).join(','));
+  });
+  return '\uFEFF' + lines.join('\n');
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('コピーしました');
+    return true;
+  } catch (e) {
+    showToast('コピーに失敗しました');
+    return false;
+  }
+}
+
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.screen === name);
+  });
+  if (name === 'list') renderList();
+  if (name === 'import') renderImport();
+  if (name === 'export') renderExport();
+}
+
+function toggleGenre(genre) {
+  const idx = state.filters.genres.indexOf(genre);
+  if (idx >= 0) state.filters.genres.splice(idx, 1);
+  else state.filters.genres.push(genre);
+  save();
+  renderList();
+}
+
+function toggleGenreBtn(btn) {
+  const g = GENRES[parseInt(btn.dataset.genreIdx, 10)];
+  if (g) toggleGenre(g);
+}
+
+function setMaxLikes(n) {
+  state.filters.maxLikes = n;
+  save();
+  renderList();
+}
+
+function setUpdatePreset(id) {
+  state.filters.updatePreset = id;
+  save();
+  renderList();
+}
+
+function renderList() {
+  const filtered = filterSalons(state.salons);
+  document.getElementById('listStat').textContent =
+    filtered.length + '件 / 登録' + state.salons.length + '件';
+
+  const genreChips = GENRES.map((g, i) => {
+    const active = state.filters.genres.includes(g) ? ' active' : '';
+    return '<button type="button" class="chip' + active + '" data-genre-idx="' + i + '" onclick="toggleGenreBtn(this)">' + escapeHtml(g) + '</button>';
+  }).join('');
+
+  const likesChips = LIKES_PRESETS.map(n => {
+    const active = state.filters.maxLikes === n ? ' active' : '';
+    return '<button type="button" class="chip' + active + '" onclick="setMaxLikes(' + n + ')">' + n + '以下</button>';
+  }).join('');
+
+  const updateChips = UPDATE_PRESETS.map(p => {
+    const active = state.filters.updatePreset === p.id ? ' active' : '';
+    return '<button type="button" class="chip' + active + '" onclick="setUpdatePreset(\'' + p.id + '\')">' + p.label + '</button>';
+  }).join('');
+
+  let cards = '';
+  if (!filtered.length) {
+    cards = '<div class="empty-box">条件に合うサロンがありません。<br>「取込」タブからCSVを追加してください。</div>';
+  } else {
+    cards = filtered.map(s => (
+      '<div class="salon-card">' +
+        '<div class="salon-name">' +
+          '<span class="salon-badge">' + escapeHtml(s.genre) + '</span>' +
+          escapeHtml(s.name) +
+        '</div>' +
+        '<div class="salon-meta">' +
+          '<span>♥ ' + escapeHtml(s.likes) + '</span>' +
+          (s.updatedAt ? '<span>更新 ' + escapeHtml(s.updatedAt) + '</span>' : '') +
+          (s.address ? '<div>' + escapeHtml(s.address) + '</div>' : '') +
+        '</div>' +
+      '</div>'
+    )).join('');
+  }
+
+  document.getElementById('listBody').innerHTML =
+    '<div class="filter-block"><div class="filter-label">ジャンル</div><div class="chip-row">' + genreChips + '</div></div>' +
+    '<div class="filter-block"><div class="filter-label">お気に入り上限</div><div class="chip-row">' + likesChips + '</div></div>' +
+    '<div class="filter-block"><div class="filter-label">最終更新日</div><div class="chip-row">' + updateChips + '</div></div>' +
+    cards;
+}
+
+function renderImport() {
+  document.getElementById('importBody').innerHTML =
+    '<div class="note-box">' +
+      'スクレイピングは旧Streamlit版で行い、CSVをここに取り込んでください。' +
+      'データはこの端末のlocalStorageに保存され、ブラウザを閉じても残ります。' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>CSVファイルを取込</h3>' +
+      '<p>旧アプリの「CSVを保存」やスプシのエクスポートファイル（.csv）を選びます。URLが重複する行はスキップします。</p>' +
+      '<button type="button" class="btn btn-primary" onclick="document.getElementById(\'csvFile\').click()">CSVを選ぶ</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>クリップボードから取込</h3>' +
+      '<p>スプレッドシートでコピーした表（タブ区切り）を貼り付けデータとして追加します。</p>' +
+      '<button type="button" class="btn btn-secondary" onclick="importFromClipboard()">クリップボードから追加</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>手動で1件追加</h3>' +
+      '<p>サロンURLがあれば重複チェックできます。</p>' +
+      '<button type="button" class="btn btn-ghost" onclick="openSheet(\'add\')">手動追加を開く</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>データをすべて削除</h3>' +
+      '<p>端末に保存したサロンデータを空にします。</p>' +
+      '<button type="button" class="btn btn-danger" onclick="openSheet(\'clear\')">すべて削除</button>' +
+    '</div>';
+}
+
+function renderExport() {
+  const filtered = filterSalons(state.salons);
+  const sessionSet = new Set(state.sessionNewUrls);
+  const sessionList = state.salons.filter(s => sessionSet.has(s.url));
+  const sessionFiltered = filterSalons(sessionList);
+
+  document.getElementById('exportBody').innerHTML =
+    '<div class="stat-pill">今回の新規 ' + sessionFiltered.length + '件 / 表示中 ' + filtered.length + '件</div>' +
+    '<div style="height:12px"></div>' +
+    '<div class="action-card">' +
+      '<h3>スプシにコピー（今回分のみ）</h3>' +
+      '<p>このアプリを開いてから新規追加されたサロンのみ。タブ区切りでコピーします。</p>' +
+      '<button type="button" class="btn btn-primary" onclick="copySessionNew()">今回分のみコピー（' + sessionFiltered.length + '件）</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>スプシにコピー（全件・フィルタ適用）</h3>' +
+      '<p>リストのフィルタ条件を通したデータをコピーします。</p>' +
+      '<button type="button" class="btn btn-secondary" onclick="copyFilteredAll()">全件コピー（' + filtered.length + '件）</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>CSVを保存</h3>' +
+      '<p>フィルタ適用後のデータをCSVでダウンロード（共有メニューで保存できます）。</p>' +
+      '<button type="button" class="btn btn-ghost" onclick="downloadCsvFiltered()">CSVを保存（' + filtered.length + '件）</button>' +
+    '</div>' +
+    '<div class="action-card">' +
+      '<h3>今回分をリセット</h3>' +
+      '<p>「今回分のみコピー」の対象をクリアします（データ自体は消えません）。</p>' +
+      '<button type="button" class="btn btn-ghost" onclick="resetSessionNew()">今回分をリセット</button>' +
+    '</div>';
+}
+
+function openSheet(name) {
+  document.getElementById('backdrop-' + name).classList.add('open');
+  document.getElementById('sheet-' + name).classList.add('open');
+  if (name === 'add') document.getElementById('addUpdated').value = todayStr();
+}
+
+function closeSheet(name) {
+  document.getElementById('backdrop-' + name).classList.remove('open');
+  document.getElementById('sheet-' + name).classList.remove('open');
+}
+
+function submitAddSalon() {
+  const row = {
+    name: document.getElementById('addName').value,
+    genre: document.getElementById('addGenre').value,
+    address: document.getElementById('addAddress').value,
+    phone: document.getElementById('addPhone').value,
+    url: document.getElementById('addUrl').value,
+    likes: document.getElementById('addLikes').value,
+    updatedAt: document.getElementById('addUpdated').value,
+    fetchedAt: todayStr()
+  };
+  const added = addSalons([row]);
+  if (!added) {
+    showToast('URLが空か、既に登録済みです');
+    return;
+  }
+  closeSheet('add');
+  showToast(added + '件を追加しました');
+  renderList();
+  renderExport();
+}
+
+function handleCsvFile(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCsvText(String(reader.result || ''));
+    const added = addSalons(rows);
+    showToast(added + '件を追加しました（重複はスキップ）');
+    renderList();
+    renderExport();
+    switchScreen('list');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function importFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text.trim()) {
+      showToast('クリップボードが空です');
+      return;
+    }
+    const rows = parseCsvText(text);
+    const added = addSalons(rows);
+    showToast(added + '件を追加しました');
+    renderList();
+    renderExport();
+    switchScreen('list');
+  } catch (e) {
+    showToast('クリップボードを読めませんでした');
+  }
+}
+
+function copySessionNew() {
+  const sessionSet = new Set(state.sessionNewUrls);
+  const list = filterSalons(state.salons.filter(s => sessionSet.has(s.url)));
+  if (!list.length) { showToast('今回分は0件です'); return; }
+  copyText(salonsToTsv(list));
+}
+
+function copyFilteredAll() {
+  const list = filterSalons(state.salons);
+  if (!list.length) { showToast('コピーするデータがありません'); return; }
+  copyText(salonsToTsv(list));
+}
+
+function downloadCsvFiltered() {
+  const list = filterSalons(state.salons);
+  if (!list.length) { showToast('保存するデータがありません'); return; }
+  const csv = salonsToCsv(list);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const file = new File([blob], 'salons_' + todayStr() + '.csv', { type: 'text/csv' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: file.name }).catch(() => {});
+    showToast('共有メニューを開きました');
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSVを保存しました');
+}
+
+function resetSessionNew() {
+  state.sessionNewUrls = [];
+  showToast('今回分をリセットしました');
+  renderExport();
+}
+
+function confirmClearAll() {
+  state.salons = [];
+  state.sessionNewUrls = [];
+  save();
+  closeSheet('clear');
+  showToast('すべて削除しました');
+  renderList();
+  renderImport();
+  renderExport();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+load();
+renderList();
+renderImport();
+renderExport();
+</script>
+</body>
+</html>
