@@ -70,7 +70,7 @@ input[type=file]{display:none}
 <div class="screen active" id="screen-search">
   <div class="page-head">
     <div class="page-title">ミニモ検索</div>
-    <div class="page-sub">旧Streamlit版と同じ条件で検索（データは端末に保存）</div>
+    <div class="page-sub">旧版と同じPlaywrightで検索（データは端末に保存）</div>
     <div class="stat" id="searchStat"></div>
   </div>
   <div class="scroll-body" id="searchBody"></div>
@@ -126,14 +126,11 @@ input[type=file]{display:none}
 
 <script>
 const STORAGE_KEY = 'minimo_salon_v2';
-const SORT_NEWEST = 139;
+const DEFAULT_API_URL = '';
 const CATEGORIES = { nail:'ネイル', eyelash:'マツエク・マツパ', eyebrow:'眉毛', relaxation:'エステ・リラク', other:'その他美容' };
 const CAT_KEYS = Object.keys(CATEGORIES);
-const CATEGORY_CODES = { nail:2, eyelash:3, relaxation:4, eyebrow:5 };
 const KANSAI = ['大阪府','京都府','兵庫県','奈良県','滋賀県','和歌山県'];
 const PREFECTURES = ['北海道','青森県','岩手県','秋田県','山形県','宮城県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
-const PREF_CODES = {北海道:1,青森県:2,岩手県:3,宮城県:4,秋田県:5,山形県:6,福島県:7,茨城県:8,栃木県:9,群馬県:10,埼玉県:11,千葉県:12,東京都:13,神奈川県:14,新潟県:15,富山県:16,石川県:17,福井県:18,山梨県:19,長野県:20,岐阜県:21,静岡県:22,愛知県:23,三重県:24,滋賀県:25,京都府:26,大阪府:27,兵庫県:28,奈良県:29,和歌山県:30,鳥取県:31,島根県:32,岡山県:33,広島県:34,山口県:35,徳島県:36,香川県:37,愛媛県:38,高知県:39,福岡県:40,佐賀県:41,長崎県:42,熊本県:43,大分県:44,宮崎県:45,鹿児島県:46,沖縄県:47};
-
 const state = {
   salons: [],
   sessionNewUrls: [],
@@ -150,7 +147,9 @@ const state = {
     updateMax: '',
     mode: 'pref',
     kansai: [],
-    otherPrefs: []
+    otherPrefs: [],
+    apiUrl: DEFAULT_API_URL,
+    apiKey: ''
   },
   listFilters: { genres: [], maxLikes: 100, updatePreset: 'off' }
 };
@@ -199,106 +198,66 @@ function updateRange(){
   return {min,max};
 }
 
-async function fetchHtml(url){
-  const urls=[
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
-    'https://corsproxy.io/?'+encodeURIComponent(url)
-  ];
-  let lastErr;
-  for(const u of urls){
-    try{
-      const res=await fetch(u,{signal:AbortSignal.timeout(28000)});
-      if(res.ok) return await res.text();
-    }catch(e){ lastErr=e; }
-    await sleep(400);
-  }
-  throw lastErr||new Error('fetch failed');
-}
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-function getListUrl(cat,pref,page){
-  const base='https://minimodel.jp/list/'+CATEGORY_CODES[cat]+'/'+PREF_CODES[pref]+'/c0/'+SORT_NEWEST;
-  return page<=1?base:base+(base.includes('?')?'&':'?')+'p='+page;
-}
-function getSearchUrl(cat,pref,page){
-  let u='https://minimodel.jp/search?category='+cat+'&keyword='+encodeURIComponent(pref)+'&order=updated_datetime';
-  if(page>1) u+='&p='+page;
-  return u;
+function apiBase(){
+  return String(state.settings.apiUrl||'').trim().replace(/\/+$/,'');
 }
 
-function extractSalons(html, catKey){
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  const results=[]; const seen=new Set();
-  doc.querySelectorAll('a[href^="/r/"]').forEach(link=>{
-    const href=(link.getAttribute('href')||'').split('?')[0];
-    if(!/^\/r\/[A-Za-z0-9]+$/.test(href)) return;
-    const url='https://minimodel.jp'+href;
-    if(seen.has(url)) return;
-    let parent=link, text='';
-    for(let i=0;i<12;i++){
-      parent=parent.parentElement; if(!parent) break;
-      const pt=parent.innerText||'';
-      if(pt.length>80&&pt.length<5000){ text=pt; break; }
-    }
-    if(!text) return;
-    let favorites=-1;
-    const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-    for(let i=0;i<lines.length-2;i++){
-      if((/^[\d.]+$/.test(lines[i])||lines[i]==='-') && (/^[\d,]+$/.test(lines[i+1])||lines[i+1]==='-') && /^[\d,]+$/.test(lines[i+2])){
-        favorites=parseInt(lines[i+2].replace(/,/g,''),10); break;
-      }
-    }
-    if(favorites<0){ const m=text.match(/-\s*\n\s*-\s*\n\s*(\d+)/); if(m) favorites=parseInt(m[1],10); }
-    if(favorites<0){ const m=text.match(/お気に入り[：:]?\s*(\d+)/); if(m) favorites=parseInt(m[1],10); }
-    if(favorites<0&&text.includes('詳細を見る')) favorites=0;
-    if(favorites<0) return;
-    let name='';
-    parent.querySelectorAll('a[href*="/r/"]').forEach(nl=>{
-      const lt=(nl.getAttribute('name')||nl.innerText||'').trim();
-      if(lt.includes('さんの詳細を見る')) name=lt.replace('さんの詳細を見る','').trim();
-    });
-    if(!name){
-      for(const line of lines){
-        if(line.length>2&&line.length<50&&!/^[\d.,¥]/.test(line)&&!line.includes('経験年数')&&!line.includes('詳細を見る')&&!line.includes('駅')){ name=line; break; }
-      }
-    }
-    if(!name) return;
-    seen.add(url);
-    results.push({ name, url, favorites, category_key:catKey, genre:CATEGORIES[catKey]||'美容' });
-  });
-  const byUrl=new Map();
-  results.forEach(r=>{ const p=byUrl.get(r.url); if(!p||r.favorites>p.favorites) byUrl.set(r.url,r); });
-  return [...byUrl.values()];
+function mapScrapeResult(row){
+  const phone=String(row['電話番号']||'').replace(/\D/g,'');
+  const fetched=String(row['取得日時']||'');
+  return {
+    id: uid(),
+    name: String(row['サロン名']||'').trim(),
+    genre: String(row['ジャンル']||'').trim(),
+    address: String(row['住所']||'').trim(),
+    phone,
+    url: String(row['サロンURL']||'').trim(),
+    likes: parseInt(row['いいね数']||0,10)||0,
+    updatedAt: String(row['最終更新日']||'').slice(0,10),
+    fetchedAt: fetched.slice(0,10)||todayStr()
+  };
 }
 
-function parseDetail(html){
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  const body=doc.body.innerText||'';
-  let updatedAt='';
-  const time=doc.querySelector('time[datetime]');
-  if(time) updatedAt=(time.getAttribute('datetime')||'').slice(0,10);
-  if(!updatedAt){ const m=body.match(/(\d{4})年(\d{1,2})月(\d{1,2})日\s*更新/); if(m) updatedAt=m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0'); }
-  let address='';
-  for(const line of body.split('\n')){
-    const l=line.trim();
-    if(!l.includes('(地図)')) continue;
-    const a=l.replace(/\s*\(地図\)\s*$/,'').trim();
-    if(/(?:都|道|府|県)/.test(a)&&a.length>7){ address=a; break; }
-  }
-  let phone='';
-  if(state.settings.fetchPhone){
-    const m=body.match(/0\d{9,10}/);
-    if(m) phone=m[0];
-  }
-  let pref='';
-  for(const p of PREFECTURES){ if(address.startsWith(p)){ pref=p; break; } }
-  return { updatedAt, address, phone, prefecture:pref };
-}
-
-function passesUpdate(updatedAt){
+function buildScrapePayload(){
+  const s=state.settings;
   const r=updateRange();
-  if(!r||!updatedAt) return !r;
-  return updatedAt>=r.min && updatedAt<=r.max;
+  return {
+    categories: s.categories.length ? s.categories : null,
+    max_likes: s.maxLikes,
+    max_pages: s.maxPages,
+    fetch_phone: s.fetchPhone,
+    nationwide: s.mode==='nationwide',
+    prefectures: selectedPrefs(),
+    existing_urls: state.salons.map(x=>x.url).filter(Boolean),
+    filter_updated: !!s.filterUpdated,
+    update_min_date: r?r.min:null,
+    update_max_date: r?r.max:null
+  };
+}
+
+async function consumeSse(res, onEvent){
+  const reader=res.body.getReader();
+  const decoder=new TextDecoder();
+  let buf='';
+  while(true){
+    const {value,done}=await reader.read();
+    if(done) break;
+    buf+=decoder.decode(value,{stream:true});
+    const parts=buf.split('\n\n');
+    buf=parts.pop()||'';
+    for(const chunk of parts){
+      const lines=chunk.split('\n');
+      let event='message', data='';
+      lines.forEach(line=>{
+        if(line.startsWith('event:')) event=line.slice(6).trim();
+        if(line.startsWith('data:')) data=line.slice(5).trim();
+      });
+      if(!data) continue;
+      const parsed=JSON.parse(data);
+      if(event==='error') throw new Error(parsed.message||'server error');
+      onEvent(event, parsed);
+    }
+  }
 }
 
 function log(msg){
@@ -311,49 +270,42 @@ function log(msg){
 async function scrape(){
   if(state.scraping) return;
   if(state.settings.mode==='pref' && !selectedPrefs().length){ toast('都道府県を選んでください'); return; }
+  const base=apiBase();
+  if(!base){ toast('APIのURLを設定してください'); return; }
   state.scraping=true; state.scrapeLog=[]; state.sessionNewUrls=[];
   renderSearch();
   const existing=new Set(state.salons.map(s=>s.url));
   let added=0;
   try{
-    const cats=activeCats();
-    const prefs=state.settings.mode==='nationwide'?['全国']:selectedPrefs();
-    for(const pref of (state.settings.mode==='nationwide'?['__nationwide__']:prefs)){
-      for(const cat of cats){
-        for(let page=1; page<=state.settings.maxPages; page++){
-          log('📄 '+((state.settings.mode==='nationwide')?'全国':pref)+' '+CATEGORIES[cat]+' p'+page);
-          let html;
-          try{
-            const url=(cat==='other'||!CATEGORY_CODES[cat])
-              ? getSearchUrl('other', pref==='__nationwide__'?'':pref, page)
-              : (state.settings.mode==='nationwide'
-                ? 'https://minimodel.jp/search?category='+cat+'&order=updated_datetime'+(page>1?'&p='+page:'')
-                : getListUrl(cat,pref,page));
-            html=await fetchHtml(url);
-          }catch(e){ log('⚠️ 取得失敗'); break; }
-          const salons=extractSalons(html,cat);
-          if(!salons.length) break;
-          const matching=salons.filter(s=>s.favorites<=state.settings.maxLikes && !existing.has(s.url));
-          for(const s of matching){
-            log('🔍 '+s.name.slice(0,18));
-            let detail;
-            try{ detail=parseDetail(await fetchHtml(s.url)); }catch(e){ continue; }
-            if(state.settings.mode==='pref' && detail.prefecture && detail.prefecture!==pref) continue;
-            if(!passesUpdate(detail.updatedAt)) continue;
-            const row={
-              id:uid(), name:s.name, genre:s.genre||CATEGORIES[cat], address:detail.address||'',
-              phone:detail.phone||'', url:s.url, likes:s.favorites,
-              updatedAt:detail.updatedAt||'', fetchedAt:todayStr()
-            };
-            state.salons.push(row); existing.add(s.url); state.sessionNewUrls.push(s.url); added++;
-            log('✨ '+row.name.slice(0,16)+' ♥'+row.likes);
-            save();
-            await sleep(350);
-          }
-          await sleep(500);
-        }
-      }
+    log('🚀 サーバーでスクレイピング開始');
+    const headers={'Content-Type':'application/json'};
+    if(state.settings.apiKey) headers['X-API-Key']=state.settings.apiKey;
+    const res=await fetch(base+'/scrape',{
+      method:'POST',
+      headers,
+      body:JSON.stringify(buildScrapePayload())
+    });
+    if(!res.ok){
+      const err=await res.text();
+      throw new Error(res.status+' '+err.slice(0,120));
     }
+    await consumeSse(res,(event,data)=>{
+      if(event==='progress'){
+        log(data.message||'');
+        return;
+      }
+      if(event==='done'){
+        (data.results||[]).forEach(row=>{
+          const mapped=mapScrapeResult(row);
+          if(!mapped.url||existing.has(mapped.url)) return;
+          state.salons.push(mapped);
+          existing.add(mapped.url);
+          state.sessionNewUrls.push(mapped.url);
+          added++;
+          log('✨ '+mapped.name.slice(0,16)+' ♥'+mapped.likes);
+        });
+      }
+    });
     state.salons=dedupe(state.salons);
     save();
     log('✅ 完了 +'+added+'件');
@@ -433,6 +385,10 @@ function renderSearch(){
       '<button type="button" class="chip'+(s.mode==='nationwide'?' on':'')+'" onclick="setMode(\'nationwide\')">全国</button></div></div>'+
     (s.mode==='pref'?'<div class="block"><div class="block-label">関西</div><div class="chip-row">'+kansaiHtml+'</div>'+
       '<button type="button" class="btn btn-ghost" style="margin-top:8px" onclick="openSheet(\'prefs\')">その他の都道府県 ('+s.otherPrefs.length+')</button></div>':'')+
+    '<div class="block"><div class="block-label">スクレイピングAPI（旧版Playwright）</div>'+
+      '<input id="apiUrlInput" type="url" placeholder="https://minimo-scraper-api.onrender.com" value="'+esc(s.apiUrl)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px;margin-bottom:8px" onchange="setApiUrl(this.value)">'+
+      '<input id="apiKeyInput" type="password" placeholder="APIキー（任意）" value="'+esc(s.apiKey)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px" onchange="setApiKey(this.value)">'+
+      '<p style="font-size:11px;color:var(--ink-light);margin-top:8px;line-height:1.5">Render等にデプロイしたAPIのURLを入力。未設定だと検索できません。</p></div>'+
     '<button type="button" class="btn btn-primary" id="btnScrape" '+(state.scraping?'disabled':'')+' onclick="scrape()">'+(state.scraping?'検索中...':'🔍 スクレイピング開始')+'</button>'+
     '<div style="height:10px"></div><div class="log-box" id="scrapeLog">'+(state.scrapeLog.join('\n')||'ログはここに表示されます')+'</div>';
   renderOtherPrefs();
@@ -492,6 +448,8 @@ function setUpdPreset(v){ state.settings.filterUpdated=true; state.settings.upda
 function setMode(m){ state.settings.mode=m; save(); renderSearch(); }
 function toggleKansai(p){ const i=state.settings.kansai.indexOf(p); if(i>=0) state.settings.kansai.splice(i,1); else state.settings.kansai.push(p); save(); renderSearch(); }
 function toggleOther(p){ const i=state.settings.otherPrefs.indexOf(p); if(i>=0) state.settings.otherPrefs.splice(i,1); else state.settings.otherPrefs.push(p); save(); renderOtherPrefs(); renderSearch(); }
+function setApiUrl(v){ state.settings.apiUrl=String(v||'').trim(); save(); }
+function setApiKey(v){ state.settings.apiKey=String(v||'').trim(); save(); }
 function toggleListGenre(g){ const i=state.listFilters.genres.indexOf(g); if(i>=0) state.listFilters.genres.splice(i,1); else state.listFilters.genres.push(g); save(); renderList(); }
 function setListLikes(v){ state.listFilters.maxLikes=+v; save(); renderList(); renderExport(); }
 function setListUpd(v){ state.listFilters.updatePreset=v; save(); renderList(); renderExport(); }
