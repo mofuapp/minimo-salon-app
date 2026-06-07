@@ -388,6 +388,7 @@ function renderSearch(){
     '<div class="block"><div class="block-label">スクレイピングAPI（旧版Playwright）</div>'+
       '<input id="apiUrlInput" type="url" placeholder="https://minimo-scraper-api.onrender.com" value="'+esc(s.apiUrl)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px;margin-bottom:8px" onchange="setApiUrl(this.value)">'+
       '<input id="apiKeyInput" type="password" placeholder="APIキー（任意）" value="'+esc(s.apiKey)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px" onchange="setApiKey(this.value)">'+
+      '<button type="button" class="btn btn-ghost" style="margin-top:8px" onclick="testApi()">🔌 API接続テスト</button>'+
       '<p style="font-size:11px;color:var(--ink-light);margin-top:8px;line-height:1.5">Render等にデプロイしたAPIのURLを入力。未設定だと検索できません。</p></div>'+
     '<button type="button" class="btn btn-primary" id="btnScrape" '+(state.scraping?'disabled':'')+' onclick="scrape()">'+(state.scraping?'検索中...':'🔍 スクレイピング開始')+'</button>'+
     '<div style="height:10px"></div><div class="log-box" id="scrapeLog">'+(state.scrapeLog.join('\n')||'ログはここに表示されます')+'</div>';
@@ -450,6 +451,18 @@ function toggleKansai(p){ const i=state.settings.kansai.indexOf(p); if(i>=0) sta
 function toggleOther(p){ const i=state.settings.otherPrefs.indexOf(p); if(i>=0) state.settings.otherPrefs.splice(i,1); else state.settings.otherPrefs.push(p); save(); renderOtherPrefs(); renderSearch(); }
 function setApiUrl(v){ state.settings.apiUrl=String(v||'').trim(); save(); }
 function setApiKey(v){ state.settings.apiKey=String(v||'').trim(); save(); }
+async function testApi(){
+  const base=apiBase();
+  if(!base){ toast('APIのURLを入力してください'); return; }
+  try{
+    const headers={};
+    if(state.settings.apiKey) headers['X-API-Key']=state.settings.apiKey;
+    const res=await fetch(base+'/health',{headers,signal:AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error(res.status+'');
+    const data=await res.json();
+    toast(data.ok?'API接続OK':'応答異常');
+  }catch(e){ toast('接続失敗: '+e.message); }
+}
 function toggleListGenre(g){ const i=state.listFilters.genres.indexOf(g); if(i>=0) state.listFilters.genres.splice(i,1); else state.listFilters.genres.push(g); save(); renderList(); }
 function setListLikes(v){ state.listFilters.maxLikes=+v; save(); renderList(); renderExport(); }
 function setListUpd(v){ state.listFilters.updatePreset=v; save(); renderList(); renderExport(); }
