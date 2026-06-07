@@ -14,7 +14,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#FAF7F8;--card:#fff;--ink:#2D2A2B;--ink-soft:#6B6568;--ink-light:#A39DA0;
-  --accent:#D4536F;--accent-soft:#FCE8ED;--line:#EDE8EA;--ok:#2E9E6A;
+  --accent:#D4536F;--accent-soft:#FCE8ED;--line:#EDE8EA;
   --nav-h:72px;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);
   --radius:16px;--font:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;
 }
@@ -31,7 +31,6 @@ body{display:flex;flex-direction:column}
 .chip-row{display:flex;flex-wrap:wrap;gap:8px}
 .chip{padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:12px;font-weight:700;color:var(--ink-soft)}
 .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.chip:disabled{opacity:.45}
 .btn{display:flex;align-items:center;justify-content:center;width:100%;padding:14px;border-radius:14px;border:none;font:inherit;font-size:15px;font-weight:800;cursor:pointer;touch-action:manipulation}
 .btn:active{transform:scale(.98)}
 .btn-primary{background:var(--accent);color:#fff}
@@ -39,27 +38,24 @@ body{display:flex;flex-direction:column}
 .btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
 .btn-danger{background:#FFF0F0;color:#C43D3D;border:1.5px solid #F5D0D0}
 .btn+.btn{margin-top:8px}
-.btn:disabled{opacity:.5}
-.log-box{background:#1e1e1e;color:#d4d4d4;border-radius:12px;padding:12px;font-size:11px;line-height:1.55;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace}
 .stat{font-size:12px;font-weight:700;color:var(--accent);margin-top:8px}
 .salon-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:8px}
 .salon-name{font-size:15px;font-weight:800;margin-bottom:4px}
 .salon-meta{font-size:12px;color:var(--ink-soft);line-height:1.55}
 .badge{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-right:6px}
 .empty{padding:36px 12px;text-align:center;color:var(--ink-light);font-size:13px;line-height:1.7}
+.step{display:flex;gap:10px;margin-bottom:12px;font-size:13px;line-height:1.55;color:var(--ink-soft)}
+.step-num{flex:0 0 22px;height:22px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;background:#fff;border-top:1px solid var(--line);padding-bottom:var(--safe-bottom);height:calc(var(--nav-h) + var(--safe-bottom))}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;font:inherit;font-size:10px;font-weight:700;color:var(--ink-light)}
 .nav-btn svg{width:22px;height:22px}
 .nav-btn.on{color:var(--accent)}
 .sheet-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30}
 .sheet-bg.open{display:block}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:#fff;border-radius:18px 18px 0 0;padding:12px 16px calc(18px + var(--safe-bottom));transform:translateY(110%);transition:transform .25s;max-height:80vh;overflow-y:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:#fff;border-radius:18px 18px 0 0;padding:12px 16px calc(18px + var(--safe-bottom));transform:translateY(110%);transition:transform .25s}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--line);border-radius:99px;margin:0 auto 12px}
 .sheet-title{font-size:16px;font-weight:800;margin-bottom:10px}
-.pref-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.pref-item{padding:10px;border:1.5px solid var(--line);border-radius:12px;font-size:13px;font-weight:700;text-align:center}
-.pref-item.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + var(--safe-bottom) + 12px);transform:translateX(-50%) translateY(120px);opacity:0;background:rgba(45,42,43,.9);color:#fff;padding:9px 16px;border-radius:999px;font-size:12px;font-weight:700;z-index:40;transition:.25s}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 input[type=file]{display:none}
@@ -67,13 +63,13 @@ input[type=file]{display:none}
 </head>
 <body>
 
-<div class="screen active" id="screen-search">
+<div class="screen active" id="screen-import">
   <div class="page-head">
-    <div class="page-title">ミニモ検索</div>
-    <div class="page-sub">旧版と同じPlaywrightで検索（データは端末に保存）</div>
-    <div class="stat" id="searchStat"></div>
+    <div class="page-title">CSV取込</div>
+    <div class="page-sub">スクレイプは旧Streamlit版、管理はこのアプリ</div>
+    <div class="stat" id="importStat"></div>
   </div>
-  <div class="scroll-body" id="searchBody"></div>
+  <div class="scroll-body" id="importBody"></div>
 </div>
 
 <div class="screen" id="screen-list">
@@ -93,8 +89,8 @@ input[type=file]{display:none}
 </div>
 
 <nav class="bottom-nav">
-  <button type="button" class="nav-btn on" data-screen="search" onclick="switchScreen('search')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span>検索</span>
+  <button type="button" class="nav-btn on" data-screen="import" onclick="switchScreen('import')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>取込</span>
   </button>
   <button type="button" class="nav-btn" data-screen="list" onclick="switchScreen('list')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>リスト</span>
@@ -103,14 +99,6 @@ input[type=file]{display:none}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 10l5 5 5-5M5 21h14"/></svg><span>出力</span>
   </button>
 </nav>
-
-<div class="sheet-bg" id="sheet-bg-prefs" onclick="closeSheet('prefs')"></div>
-<div class="sheet" id="sheet-prefs">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">その他の都道府県</div>
-  <div class="pref-grid" id="otherPrefGrid"></div>
-  <button type="button" class="btn btn-primary" style="margin-top:12px" onclick="closeSheet('prefs')">完了</button>
-</div>
 
 <div class="sheet-bg" id="sheet-bg-clear" onclick="closeSheet('clear')"></div>
 <div class="sheet" id="sheet-clear">
@@ -126,31 +114,12 @@ input[type=file]{display:none}
 
 <script>
 const STORAGE_KEY = 'minimo_salon_v2';
-const DEFAULT_API_URL = '';
+const STREAMLIT_URL = 'https://mhhke.streamlit.app';
 const CATEGORIES = { nail:'ネイル', eyelash:'マツエク・マツパ', eyebrow:'眉毛', relaxation:'エステ・リラク', other:'その他美容' };
-const CAT_KEYS = Object.keys(CATEGORIES);
-const KANSAI = ['大阪府','京都府','兵庫県','奈良県','滋賀県','和歌山県'];
-const PREFECTURES = ['北海道','青森県','岩手県','秋田県','山形県','宮城県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+
 const state = {
   salons: [],
   sessionNewUrls: [],
-  scrapeLog: [],
-  scraping: false,
-  settings: {
-    categories: [],
-    maxLikes: 5,
-    maxPages: 20,
-    fetchPhone: true,
-    filterUpdated: false,
-    updatePreset: '30',
-    updateMin: '',
-    updateMax: '',
-    mode: 'pref',
-    kansai: [],
-    otherPrefs: [],
-    apiUrl: DEFAULT_API_URL,
-    apiKey: ''
-  },
   listFilters: { genres: [], maxLikes: 100, updatePreset: 'off' }
 };
 
@@ -162,7 +131,10 @@ function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.
 function load(){
   try{
     const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');
-    if(d){ if(d.salons) state.salons=d.salons; if(d.settings) Object.assign(state.settings,d.settings); if(d.listFilters) Object.assign(state.listFilters,d.listFilters); }
+    if(d){
+      if(d.salons) state.salons=d.salons;
+      if(d.listFilters) Object.assign(state.listFilters,d.listFilters);
+    }
   }catch(e){}
   migrate();
 }
@@ -172,7 +144,7 @@ function migrate(){
   state.salons=dedupe(state.salons);
 }
 function save(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ salons:state.salons, settings:state.settings, listFilters:state.listFilters }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ salons:state.salons, listFilters:state.listFilters }));
 }
 
 function dedupe(list){
@@ -181,155 +153,22 @@ function dedupe(list){
   return [...m.values()];
 }
 
-function selectedPrefs(){
-  if(state.settings.mode==='nationwide') return [];
-  return [...state.settings.kansai,...state.settings.otherPrefs];
-}
-function activeCats(){
-  return state.settings.categories.length ? state.settings.categories : CAT_KEYS;
-}
-function updateRange(){
-  if(!state.settings.filterUpdated) return null;
-  const p=state.settings.updatePreset;
-  if(p==='custom') return { min:state.settings.updateMin, max:state.settings.updateMax };
-  const days=parseInt(p,10); const max=todayStr();
-  const d=new Date(); d.setDate(d.getDate()-days);
-  const min=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  return {min,max};
-}
-
-function apiBase(){
-  return String(state.settings.apiUrl||'').trim().replace(/\/+$/,'');
-}
-
-function mapScrapeResult(row){
-  const phone=String(row['電話番号']||'').replace(/\D/g,'');
-  const fetched=String(row['取得日時']||'');
-  return {
-    id: uid(),
-    name: String(row['サロン名']||'').trim(),
-    genre: String(row['ジャンル']||'').trim(),
-    address: String(row['住所']||'').trim(),
-    phone,
-    url: String(row['サロンURL']||'').trim(),
-    likes: parseInt(row['いいね数']||0,10)||0,
-    updatedAt: String(row['最終更新日']||'').slice(0,10),
-    fetchedAt: fetched.slice(0,10)||todayStr()
-  };
-}
-
-function buildScrapePayload(){
-  const s=state.settings;
-  const r=updateRange();
-  return {
-    categories: s.categories.length ? s.categories : null,
-    max_likes: s.maxLikes,
-    max_pages: s.maxPages,
-    fetch_phone: s.fetchPhone,
-    nationwide: s.mode==='nationwide',
-    prefectures: selectedPrefs(),
-    existing_urls: state.salons.map(x=>x.url).filter(Boolean),
-    filter_updated: !!s.filterUpdated,
-    update_min_date: r?r.min:null,
-    update_max_date: r?r.max:null
-  };
-}
-
-async function consumeSse(res, onEvent){
-  const reader=res.body.getReader();
-  const decoder=new TextDecoder();
-  let buf='';
-  while(true){
-    const {value,done}=await reader.read();
-    if(done) break;
-    buf+=decoder.decode(value,{stream:true});
-    const parts=buf.split('\n\n');
-    buf=parts.pop()||'';
-    for(const chunk of parts){
-      const lines=chunk.split('\n');
-      let event='message', data='';
-      lines.forEach(line=>{
-        if(line.startsWith('event:')) event=line.slice(6).trim();
-        if(line.startsWith('data:')) data=line.slice(5).trim();
-      });
-      if(!data) continue;
-      const parsed=JSON.parse(data);
-      if(event==='error') throw new Error(parsed.message||'server error');
-      onEvent(event, parsed);
-    }
-  }
-}
-
-function log(msg){
-  state.scrapeLog.push(msg);
-  if(state.scrapeLog.length>40) state.scrapeLog.shift();
-  const el=document.getElementById('scrapeLog');
-  if(el) el.textContent=state.scrapeLog.join('\n');
-}
-
-async function scrape(){
-  if(state.scraping) return;
-  if(state.settings.mode==='pref' && !selectedPrefs().length){ toast('都道府県を選んでください'); return; }
-  const base=apiBase();
-  if(!base){ toast('APIのURLを設定してください'); return; }
-  state.scraping=true; state.scrapeLog=[]; state.sessionNewUrls=[];
-  renderSearch();
-  const existing=new Set(state.salons.map(s=>s.url));
-  let added=0;
-  try{
-    log('🚀 サーバーでスクレイピング開始');
-    const headers={'Content-Type':'application/json'};
-    if(state.settings.apiKey) headers['X-API-Key']=state.settings.apiKey;
-    const res=await fetch(base+'/scrape',{
-      method:'POST',
-      headers,
-      body:JSON.stringify(buildScrapePayload())
-    });
-    if(!res.ok){
-      const err=await res.text();
-      throw new Error(res.status+' '+err.slice(0,120));
-    }
-    await consumeSse(res,(event,data)=>{
-      if(event==='progress'){
-        log(data.message||'');
-        return;
-      }
-      if(event==='done'){
-        (data.results||[]).forEach(row=>{
-          const mapped=mapScrapeResult(row);
-          if(!mapped.url||existing.has(mapped.url)) return;
-          state.salons.push(mapped);
-          existing.add(mapped.url);
-          state.sessionNewUrls.push(mapped.url);
-          added++;
-          log('✨ '+mapped.name.slice(0,16)+' ♥'+mapped.likes);
-        });
-      }
-    });
-    state.salons=dedupe(state.salons);
-    save();
-    log('✅ 完了 +'+added+'件');
-    toast(added?added+'件追加':'新規なし');
-  }catch(e){
-    log('❌ '+e.message); toast('エラーが発生しました');
-  }
-  state.scraping=false;
-  renderSearch(); renderList(); renderExport();
-  if(added) switchScreen('list');
-}
-
 function addFromRows(rows){
   const existing=new Set(state.salons.map(s=>s.url)); let n=0;
   rows.forEach(r=>{
     const url=String(r.url||r['サロンURL']||'').trim(); if(!url||existing.has(url)) return;
+    const phone=String(r.phone||r['電話番号']||'').replace(/^'|'/g,'').replace(/\D/g,'');
+    const fetched=String(r.fetchedAt||r['取得日時']||'').trim();
     state.salons.push({
-      id:uid(), name:String(r.name||r['サロン名']||'').trim(),
+      id:uid(),
+      name:String(r.name||r['サロン名']||'').trim(),
       genre:String(r.genre||r['ジャンル']||'その他美容').trim(),
       address:String(r.address||r['住所']||'').trim(),
-      phone:String(r.phone||r['電話番号']||'').replace(/\D/g,''),
-      url, likes:parseInt(r.likes||r['いいね数']||0,10)||0,
+      phone,
+      url,
+      likes:parseInt(r.likes||r['いいね数']||0,10)||0,
       updatedAt:String(r.updatedAt||r['最終更新日']||'').slice(0,10),
-      fetchedAt:todayStr()
+      fetchedAt:fetched.slice(0,10)||todayStr()
     });
     existing.add(url); state.sessionNewUrls.push(url); n++;
   });
@@ -367,39 +206,20 @@ function chips(vals, selected, fn, labels){
   }).join('');
 }
 
-function renderSearch(){
-  const s=state.settings;
-  document.getElementById('searchStat').textContent='登録 '+state.salons.length+'件';
-  const catHtml=CAT_KEYS.map(k=>'<button type="button" class="chip'+(s.categories.includes(k)?' on':'')+'" onclick="toggleCat(\''+k+'\')">'+esc(CATEGORIES[k])+'</button>').join('');
-  const kansaiHtml=KANSAI.map(p=>'<button type="button" class="chip'+(s.kansai.includes(p)?' on':'')+'" onclick="toggleKansai(\''+p+'\')">'+esc(p)+'</button>').join('');
-  document.getElementById('searchBody').innerHTML=
-    '<div class="block"><div class="block-label">カテゴリ（未選択=全て）</div><div class="chip-row">'+catHtml+'</div></div>'+
-    '<div class="block"><div class="block-label">お気に入り上限</div><div class="chip-row">'+chips([1,5,10,20,50,100],s.maxLikes,'setMaxLikes')+'</div></div>'+
-    '<div class="block"><div class="block-label">検索ページ数</div><div class="chip-row">'+chips([5,10,20],s.maxPages,'setMaxPages')+'</div></div>'+
-    '<div class="block"><div class="block-label">電話番号</div><div class="chip-row"><button type="button" class="chip'+(s.fetchPhone?' on':'')+'" onclick="togglePhone()">'+(s.fetchPhone?'取得する':'取得しない')+'</button></div></div>'+
-    '<div class="block"><div class="block-label">最終更新日（検索時）</div><div class="chip-row">'+
-      '<button type="button" class="chip'+(!s.filterUpdated?' on':'')+'" onclick="setUpdFilter(false)">指定なし</button>'+
-      chips(['7','14','30','90'],s.filterUpdated?s.updatePreset:'','setUpdPreset',['7日','14日','30日','90日'])+'</div></div>'+
-    '<div class="block"><div class="block-label">検索モード</div><div class="chip-row">'+
-      '<button type="button" class="chip'+(s.mode==='pref'?' on':'')+'" onclick="setMode(\'pref\')">都道府県</button>'+
-      '<button type="button" class="chip'+(s.mode==='nationwide'?' on':'')+'" onclick="setMode(\'nationwide\')">全国</button></div></div>'+
-    (s.mode==='pref'?'<div class="block"><div class="block-label">関西</div><div class="chip-row">'+kansaiHtml+'</div>'+
-      '<button type="button" class="btn btn-ghost" style="margin-top:8px" onclick="openSheet(\'prefs\')">その他の都道府県 ('+s.otherPrefs.length+')</button></div>':'')+
-    '<div class="block"><div class="block-label">スクレイピングAPI（旧版Playwright）</div>'+
-      '<input id="apiUrlInput" type="url" placeholder="https://minimo-scraper-api.onrender.com" value="'+esc(s.apiUrl)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px;margin-bottom:8px" onchange="setApiUrl(this.value)">'+
-      '<input id="apiKeyInput" type="password" placeholder="APIキー（任意）" value="'+esc(s.apiKey)+'" style="width:100%;padding:12px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:13px" onchange="setApiKey(this.value)">'+
-      '<button type="button" class="btn btn-ghost" style="margin-top:8px" onclick="testApi()">🔌 API接続テスト</button>'+
-      '<p style="font-size:11px;color:var(--ink-light);margin-top:8px;line-height:1.5">Render等にデプロイしたAPIのURLを入力。未設定だと検索できません。</p></div>'+
-    '<button type="button" class="btn btn-primary" id="btnScrape" '+(state.scraping?'disabled':'')+' onclick="scrape()">'+(state.scraping?'検索中...':'🔍 スクレイピング開始')+'</button>'+
-    '<div style="height:10px"></div><div class="log-box" id="scrapeLog">'+(state.scrapeLog.join('\n')||'ログはここに表示されます')+'</div>';
-  renderOtherPrefs();
-}
-
-function renderOtherPrefs(){
-  const grid=document.getElementById('otherPrefGrid');
-  if(!grid) return;
-  const others=PREFECTURES.filter(p=>!KANSAI.includes(p));
-  grid.innerHTML=others.map(p=>'<button type="button" class="pref-item'+(state.settings.otherPrefs.includes(p)?' on':'')+'" onclick="toggleOther(\''+p+'\')">'+esc(p)+'</button>').join('');
+function renderImport(){
+  document.getElementById('importStat').textContent='登録 '+state.salons.length+'件';
+  document.getElementById('importBody').innerHTML=
+    '<div class="block">'+
+      '<div class="block-label">使い方</div>'+
+      '<div class="step"><span class="step-num">1</span><span>旧版Streamlitでスクレイピング</span></div>'+
+      '<div class="step"><span class="step-num">2</span><span>「CSVを保存」でファイルをダウンロード</span></div>'+
+      '<div class="step"><span class="step-num">3</span><span>下のボタンからCSVを取り込む</span></div>'+
+      '<button type="button" class="btn btn-secondary" onclick="openStreamlit()">🖥️ 旧版を開く（Streamlit）</button>'+
+    '</div>'+
+    '<div class="block">'+
+      '<button type="button" class="btn btn-primary" onclick="pickCsv()">📂 CSVを取り込む</button>'+
+      '<p style="font-size:11px;color:var(--ink-light);margin-top:10px;line-height:1.6">重複URLは自動でスキップします。取り込んだデータはこの端末に保存されます。</p>'+
+    '</div>';
 }
 
 function renderList(){
@@ -412,7 +232,7 @@ function renderList(){
     '<div class="block"><div class="block-label">最終更新日</div><div class="chip-row">'+
       '<button type="button" class="chip'+(state.listFilters.updatePreset==='off'?' on':'')+'" onclick="setListUpd(\'off\')">指定なし</button>'+
       chips(['7','14','30','90'],state.listFilters.updatePreset,'setListUpd',['7日','14日','30日','90日'])+'</div></div>'+
-    (f.length?f.map(s=>'<div class="salon-card"><div class="salon-name"><span class="badge">'+esc(s.genre)+'</span>'+esc(s.name)+'</div><div class="salon-meta">♥ '+s.likes+(s.updatedAt?' · 更新 '+esc(s.updatedAt):'')+(s.address?'<br>'+esc(s.address):'')+'</div></div>').join(''):'<div class="empty">データがありません。<br>「検索」タブからスクレイピングしてください。</div>');
+    (f.length?f.map(s=>'<div class="salon-card"><div class="salon-name"><span class="badge">'+esc(s.genre)+'</span>'+esc(s.name)+'</div><div class="salon-meta">♥ '+s.likes+(s.updatedAt?' · 更新 '+esc(s.updatedAt):'')+(s.address?'<br>'+esc(s.address):'')+'</div></div>').join(''):'<div class="empty">データがありません。<br>「取込」タブからCSVを読み込んでください。</div>');
   document.getElementById('listBody').innerHTML=html;
 }
 
@@ -424,7 +244,7 @@ function renderExport(){
     '<div class="block"><button type="button" class="btn btn-primary" onclick="copyNew()">📋 今回分のみコピー（'+sess.length+'件）</button>'+
     '<button type="button" class="btn btn-secondary" onclick="copyAll()">📋 全件コピー（'+all.length+'件）</button></div>'+
     '<div class="block"><button type="button" class="btn btn-ghost" onclick="saveCsv()">📥 CSVを保存（'+all.length+'件）</button>'+
-    '<button type="button" class="btn btn-ghost" onclick="document.getElementById(\'csvFile\').click()">📂 CSVから復元</button></div>'+
+    '<button type="button" class="btn btn-ghost" onclick="pickCsv()">📂 CSVから復元</button></div>'+
     '<div class="block"><button type="button" class="btn btn-danger" onclick="openSheet(\'clear\')">🗑️ データクリア</button></div>'+
     '<p style="font-size:11px;color:var(--ink-light);line-height:1.6">データはこの端末のlocalStorageに保存されます。ブラウザを閉じても残ります。</p>';
 }
@@ -433,36 +253,15 @@ function switchScreen(n){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+n).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('on',b.dataset.screen===n));
-  if(n==='search') renderSearch();
+  if(n==='import') renderImport();
   if(n==='list') renderList();
   if(n==='export') renderExport();
 }
 function openSheet(n){ document.getElementById('sheet-bg-'+n).classList.add('open'); document.getElementById('sheet-'+n).classList.add('open'); }
 function closeSheet(n){ document.getElementById('sheet-bg-'+n).classList.remove('open'); document.getElementById('sheet-'+n).classList.remove('open'); }
 
-function toggleCat(k){ const i=state.settings.categories.indexOf(k); if(i>=0) state.settings.categories.splice(i,1); else state.settings.categories.push(k); save(); renderSearch(); }
-function setMaxLikes(v){ state.settings.maxLikes=+v; save(); renderSearch(); }
-function setMaxPages(v){ state.settings.maxPages=+v; save(); renderSearch(); }
-function togglePhone(){ state.settings.fetchPhone=!state.settings.fetchPhone; save(); renderSearch(); }
-function setUpdFilter(on){ state.settings.filterUpdated=on; if(on&&!['7','14','30','90'].includes(state.settings.updatePreset)) state.settings.updatePreset='30'; save(); renderSearch(); }
-function setUpdPreset(v){ state.settings.filterUpdated=true; state.settings.updatePreset=v; save(); renderSearch(); }
-function setMode(m){ state.settings.mode=m; save(); renderSearch(); }
-function toggleKansai(p){ const i=state.settings.kansai.indexOf(p); if(i>=0) state.settings.kansai.splice(i,1); else state.settings.kansai.push(p); save(); renderSearch(); }
-function toggleOther(p){ const i=state.settings.otherPrefs.indexOf(p); if(i>=0) state.settings.otherPrefs.splice(i,1); else state.settings.otherPrefs.push(p); save(); renderOtherPrefs(); renderSearch(); }
-function setApiUrl(v){ state.settings.apiUrl=String(v||'').trim(); save(); }
-function setApiKey(v){ state.settings.apiKey=String(v||'').trim(); save(); }
-async function testApi(){
-  const base=apiBase();
-  if(!base){ toast('APIのURLを入力してください'); return; }
-  try{
-    const headers={};
-    if(state.settings.apiKey) headers['X-API-Key']=state.settings.apiKey;
-    const res=await fetch(base+'/health',{headers,signal:AbortSignal.timeout(12000)});
-    if(!res.ok) throw new Error(res.status+'');
-    const data=await res.json();
-    toast(data.ok?'API接続OK':'応答異常');
-  }catch(e){ toast('接続失敗: '+e.message); }
-}
+function openStreamlit(){ window.open(STREAMLIT_URL,'_blank','noopener'); }
+function pickCsv(){ document.getElementById('csvFile').click(); }
 function toggleListGenre(g){ const i=state.listFilters.genres.indexOf(g); if(i>=0) state.listFilters.genres.splice(i,1); else state.listFilters.genres.push(g); save(); renderList(); }
 function setListLikes(v){ state.listFilters.maxLikes=+v; save(); renderList(); renderExport(); }
 function setListUpd(v){ state.listFilters.updatePreset=v; save(); renderList(); renderExport(); }
@@ -480,16 +279,39 @@ function saveCsv(){
 function onCsvFile(ev){
   const file=ev.target.files[0]; ev.target.value=''; if(!file) return;
   const r=new FileReader();
-  r.onload=()=>{ const lines=String(r.result).replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean);
-    const d=lines[0].includes('\t')?'\t':','; const h=lines[0].split(d); const rows=[];
-    for(let i=1;i<lines.length;i++){ const c=lines[i].split(d); const o={}; h.forEach((k,j)=>o[k.trim()]=c[j]||''); rows.push(o); }
-    const n=addFromRows(rows); toast(n+'件追加'); renderList(); renderExport(); };
+  r.onload=()=>{
+    const text=String(r.result).replace(/^\uFEFF/,'');
+    const lines=text.split(/\r?\n/).filter(Boolean);
+    if(lines.length<2){ toast('CSVが空です'); return; }
+    const d=lines[0].includes('\t')?'\t':',';
+    const h=parseCsvLine(lines[0],d);
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      const c=parseCsvLine(lines[i],d);
+      const o={}; h.forEach((k,j)=>o[k.trim()]=c[j]||''); rows.push(o);
+    }
+    const n=addFromRows(rows);
+    toast(n?n+'件追加':'新規なし（重複のみ）');
+    renderImport(); renderList(); renderExport();
+    if(n) switchScreen('list');
+  };
   r.readAsText(file);
 }
-function confirmClear(){ state.salons=[]; state.sessionNewUrls=[]; save(); closeSheet('clear'); toast('削除しました'); renderSearch(); renderList(); renderExport(); }
+function parseCsvLine(line, delim){
+  if(delim!==',') return line.split(delim);
+  const out=[]; let cur=''; let q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){ if(q&&line[i+1]==='"'){ cur+='"'; i++; } else q=!q; continue; }
+    if(ch===','&&!q){ out.push(cur); cur=''; continue; }
+    cur+=ch;
+  }
+  out.push(cur); return out;
+}
+function confirmClear(){ state.salons=[]; state.sessionNewUrls=[]; save(); closeSheet('clear'); toast('削除しました'); renderImport(); renderList(); renderExport(); }
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-load(); renderSearch(); renderList(); renderExport();
+load(); renderImport(); renderList(); renderExport();
 </script>
 </body>
 </html>
